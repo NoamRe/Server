@@ -10,7 +10,7 @@ public class Operations {
     private static String m_Json;
     private static int m_ResponseCode;
     private static String m_Operation;
-    private static Stack<Integer> m_Stack = new Stack<>();
+    private static final Stack<Integer> m_Stack = new Stack<>();
 
     public static String Json() {
         return m_Json;
@@ -179,6 +179,7 @@ public class Operations {
                     break;
                 }
             }
+
             if (!isDividedByZero) {
                 int sum = i_Arguments[0] * i_Arguments[0];
 
