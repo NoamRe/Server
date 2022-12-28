@@ -12,11 +12,11 @@ public class Operations {
     private static String m_Operation;
     private static final Stack<Integer> m_Stack = new Stack<>();
 
-    public static String Json() {
+    public static String GetJson() {
         return m_Json;
     }
 
-    public static int ResponseCode() {
+    public static int GetResponseCode() {
         return m_ResponseCode;
     }
 
