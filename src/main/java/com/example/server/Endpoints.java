@@ -7,24 +7,24 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.logging.FileHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.logging.*;
 
 @RestController
 public class Endpoints {
-    private int m_RequestCounter = 1;
+    private int m_RequestCounter = 0;
     private final String REQUEST_LOGGER_NAME = "request-logger";
     private final String STACK_LOGGER_NAME = "stack-logger";
     private final String INDEPENDENT_LOGGER_NAME = "independent-logger";
     private final String DATE_FORMAT = "dd-MM-yyyy hh:mm:ss.sss";
-    private final String REQUEST_FILEPATH = "/requests.log";
-    private final String STACK_FILEPATH = "/stack.log";
-    private final String INDEPENDENT_FILEPATH = "/independent.log";
+    private final String LOG_FOLDER_PATH = "logs";
+    private final String REQUEST_FILEPATH = LOG_FOLDER_PATH + "/requests.log";
+    private final String STACK_FILEPATH = LOG_FOLDER_PATH + "/stack.log";
+    private final String INDEPENDENT_FILEPATH = LOG_FOLDER_PATH + "/independent.log";
     private final String INFO_LEVEL = "INFO";
     private final String DEBUG_LEVEL = "DEBUG";
     private final String ERROR_LEVEL = "ERROR";
@@ -35,11 +35,18 @@ public class Endpoints {
     private final String LEVEL_ENDPOINT = "/logs/level";
 
 
+    Endpoints() {
+        File folder = new File(LOG_FOLDER_PATH);
+        if (!folder.exists()) {
+            folder.mkdir();
+        }
+    }
+
     private String getLogMessage(String i_Loglevel, String i_LogMessage) {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(DATE_FORMAT);
         String dateTime = simpleDateFormat.format(new Date());
 
-        return dateTime + " " + i_Loglevel + ": " + i_LogMessage + " | request #" + m_RequestCounter;
+        return dateTime + " " + i_Loglevel + ": " + i_LogMessage + " | request #" + m_RequestCounter + "\n";
     }
 
     private void getStackLog(String i_Endpoint, boolean i_IsDelete,
@@ -82,7 +89,19 @@ public class Endpoints {
                 " | HTTP Verb " + i_RequestType;
         String debugMessage = "request #" + m_RequestCounter + " duration: " + i_RequestTime + "ms";
 
-        logger.addHandler(new FileHandler(REQUEST_FILEPATH));
+        File file = new File(REQUEST_FILEPATH);
+        if (file.exists()) {
+            file.delete();
+        }
+        file.createNewFile();
+        FileHandler fileHandler = new FileHandler(REQUEST_FILEPATH);
+        logger.addHandler(fileHandler);
+        fileHandler.setFormatter(new Formatter() {
+            @Override
+            public String format(LogRecord record) {
+                return record.getMessage();
+            }
+        });
         logger.setLevel(Level.INFO);
         logger.log(Level.INFO, getLogMessage(INFO_LEVEL, infoMessage));
         logger.log(Level.FINE, getLogMessage(DEBUG_LEVEL, debugMessage));
@@ -92,7 +111,19 @@ public class Endpoints {
                              boolean i_IsDelete, String[] i_Args) throws IOException {
         Logger logger = Logger.getLogger(STACK_LOGGER_NAME);
 
-        logger.addHandler(new FileHandler(STACK_FILEPATH));
+        File file = new File(STACK_FILEPATH);
+        if (file.exists()) {
+            file.delete();
+        }
+        file.createNewFile();
+        FileHandler fileHandler = new FileHandler(STACK_FILEPATH);
+        logger.addHandler(fileHandler);
+        fileHandler.setFormatter(new Formatter() {
+            @Override
+            public String format(LogRecord record) {
+                return record.getMessage();
+            }
+        });
         logger.setLevel(Level.INFO);
         if (i_IsFailure) {
             String errorMessage = "Server encountered an error ! message: " + Operations.GetErrorMessage();
@@ -109,7 +140,19 @@ public class Endpoints {
     private void independentLogger(String[] i_Args, boolean i_IsFailure) throws IOException {
         Logger logger = Logger.getLogger(INDEPENDENT_LOGGER_NAME);
 
-        logger.addHandler(new FileHandler(INDEPENDENT_FILEPATH));
+        File file = new File(INDEPENDENT_FILEPATH);
+        if (file.exists()) {
+            file.delete();
+        }
+        file.createNewFile();
+        FileHandler fileHandler = new FileHandler(INDEPENDENT_FILEPATH);
+        logger.addHandler(fileHandler);
+        fileHandler.setFormatter(new Formatter() {
+            @Override
+            public String format(LogRecord record) {
+                return record.getMessage();
+            }
+        });
         logger.setLevel(Level.FINE);
         if (i_IsFailure) {
             String errorMessage = "Server encountered an error ! message: " + Operations.GetErrorMessage();
@@ -244,15 +287,29 @@ public class Endpoints {
     }
 
     @GetMapping(LEVEL_ENDPOINT)
-    public ResponseEntity<String> GetLogLevel(@RequestParam("logger-name") String name) {
-        return new ResponseEntity<>(String.valueOf(Logger.getLogger(name).getLevel()).toUpperCase(),
+    public ResponseEntity<String> GetLogLevel(@RequestParam("logger-name") String name) throws IOException {
+        long startTime = System.nanoTime();
+        String level = String.valueOf(Logger.getLogger(name).getLevel()).toUpperCase();
+        String fixedLevel = null;
+
+        switch (level) {
+            case "FINE" -> fixedLevel = DEBUG_LEVEL;
+            case "SEVERE" -> fixedLevel = ERROR_LEVEL;
+        }
+
+        m_RequestCounter++;
+        requestLogger(LEVEL_ENDPOINT, "GET", System.nanoTime() - startTime);
+
+        return new ResponseEntity<>(fixedLevel,
                 HttpStatusCode.valueOf(200));
     }
 
     @PutMapping(LEVEL_ENDPOINT)
     public ResponseEntity<String> GetLogLevel(@RequestParam("logger-name") String name,
-                                              @RequestParam("logger-level") String level) {
+                                              @RequestParam("logger-level") String level) throws IOException {
+        long startTime = System.nanoTime();
         Level newLevel = null;
+        String fixedLevel = null;
 
         switch (level) {
             case INFO_LEVEL -> newLevel = Level.INFO;
@@ -261,8 +318,15 @@ public class Endpoints {
         }
 
         Logger.getLogger(name).setLevel(newLevel);
+        switch (level) {
+            case "FINE" -> fixedLevel = DEBUG_LEVEL;
+            case "SEVERE" -> fixedLevel = ERROR_LEVEL;
+        }
 
-        return new ResponseEntity<>(String.valueOf(Logger.getLogger(name).getLevel()).toUpperCase(),
+        m_RequestCounter++;
+        requestLogger(LEVEL_ENDPOINT, "GET", System.nanoTime() - startTime);
+
+        return new ResponseEntity<>(fixedLevel,
                 HttpStatusCode.valueOf(200));
     }
 }
