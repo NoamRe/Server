@@ -10,10 +10,15 @@ public class Operations {
     private static String m_Json;
     private static int m_ResponseCode;
     private static String m_Operation;
+    private static String m_ErrorMessage;
     private static final Stack<Integer> m_Stack = new Stack<>();
 
     public static String GetJson() {
         return m_Json;
+    }
+
+    public static String GetErrorMessage() {
+        return m_ErrorMessage;
     }
 
     public static int GetResponseCode() {
@@ -34,6 +39,7 @@ public class Operations {
                 "error-message": "%s"
                 }
                 """, i_ErrorMessage);
+        m_ErrorMessage = i_ErrorMessage;
     }
 
     private static void setResponseCode(int i_ResponseCode) {
@@ -73,9 +79,10 @@ public class Operations {
         return arguments;
     }
 
-    public static void Plus(int[] i_Arguments) {
+    public static int Plus(int[] i_Arguments) {
         boolean isStack = false;
         int length;
+        int sum = 0;
 
         if (i_Arguments == null) {
             length = m_Stack.size();
@@ -89,7 +96,6 @@ public class Operations {
                 i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_BINARY);
             }
 
-            int sum = 0;
             for (int argument : i_Arguments) {
                 sum += argument;
             }
@@ -98,11 +104,14 @@ public class Operations {
         } else {
             setResponseCode(RESULT_CONFLICT);
         }
+
+        return sum;
     }
 
-    public static void Minus(int[] i_Arguments) {
+    public static int Minus(int[] i_Arguments) {
         boolean isStack = false;
         int length;
+        int sum = 0;
 
         if (i_Arguments == null) {
             length = m_Stack.size();
@@ -116,7 +125,7 @@ public class Operations {
                 i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_BINARY);
             }
 
-            int sum = i_Arguments[0] * 2;
+            sum = i_Arguments[0] * 2;
             for (int argument : i_Arguments) {
                 sum -= argument;
             }
@@ -125,11 +134,14 @@ public class Operations {
         } else {
             setResponseCode(RESULT_CONFLICT);
         }
+
+        return sum;
     }
 
-    public static void Times(int[] i_Arguments) {
+    public static int Times(int[] i_Arguments) {
         boolean isStack = false;
         int length;
+        int sum = 0;
 
         if (i_Arguments == null) {
             length = m_Stack.size();
@@ -143,7 +155,7 @@ public class Operations {
                 i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_BINARY);
             }
 
-            int sum = 1;
+            sum = 1;
             for (int argument : i_Arguments) {
                 sum *= argument;
             }
@@ -152,11 +164,14 @@ public class Operations {
         } else {
             setResponseCode(RESULT_CONFLICT);
         }
+
+        return sum;
     }
 
-    public static void Divide(int[] i_Arguments) {
+    public static int Divide(int[] i_Arguments) {
         boolean isStack = false;
         int length;
+        int sum = 0;
 
         if (i_Arguments == null) {
             length = m_Stack.size();
@@ -181,7 +196,7 @@ public class Operations {
             }
 
             if (!isDividedByZero) {
-                int sum = i_Arguments[0] * i_Arguments[0];
+                sum = i_Arguments[0] * i_Arguments[0];
 
                 for (int argument : i_Arguments) {
                     if (argument != 0) {
@@ -194,11 +209,14 @@ public class Operations {
         } else {
             setResponseCode(RESULT_CONFLICT);
         }
+
+        return sum;
     }
 
-    public static void Pow(int[] i_Arguments) {
+    public static int Pow(int[] i_Arguments) {
         boolean isStack = false;
         int length;
+        int sum = 0;
 
         if (i_Arguments == null) {
             length = m_Stack.size();
@@ -212,7 +230,6 @@ public class Operations {
                 i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_BINARY);
             }
 
-            int sum = 0;
             for (int i = 0; i < i_Arguments.length - 1; i++) {
                 sum = (int) Math.pow(i_Arguments[i], i_Arguments[i + 1]);
             }
@@ -221,11 +238,14 @@ public class Operations {
         } else {
             setResponseCode(RESULT_CONFLICT);
         }
+
+        return sum;
     }
 
-    public static void Abs(int[] i_Arguments) {
+    public static int Abs(int[] i_Arguments) {
         boolean isStack = false;
         int length;
+        int sum = 0;
 
         if (i_Arguments == null) {
             length = m_Stack.size();
@@ -239,16 +259,20 @@ public class Operations {
                 i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_UNARY);
             }
 
+            sum=Math.abs(i_Arguments[0]);
             setJsonResult(Math.abs(i_Arguments[0]));
             setResponseCode(RESULT_OK);
         } else {
             setResponseCode(RESULT_CONFLICT);
         }
+
+        return sum;
     }
 
-    public static void Fact(int[] i_Arguments) {
+    public static int Fact(int[] i_Arguments) {
         boolean isStack = false;
         int length;
+        int fact = 0;
 
         if (i_Arguments == null) {
             length = m_Stack.size();
@@ -262,7 +286,7 @@ public class Operations {
                 i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_UNARY);
             }
 
-            int fact = 1;
+            fact = 1;
             if (i_Arguments[0] < 0) {
                 setJsonError("Error while performing operation Factorial: not supported for the negative number");
                 setResponseCode(RESULT_CONFLICT);
@@ -277,11 +301,15 @@ public class Operations {
         } else {
             setResponseCode(RESULT_CONFLICT);
         }
+
+        return fact;
     }
 
-    public static void UnknownOperation() {
+    public static int UnknownOperation() {
         setJsonError("Error: unknown operation: " + m_Operation);
         setResponseCode(RESULT_CONFLICT);
+
+        return 0;
     }
 
     public static void AddToStack(int[] i_Arguments) {
@@ -292,9 +320,19 @@ public class Operations {
         setResponseCode(RESULT_OK);
     }
 
-    public static void GetStackSize() {
+    public static String GetStackArguments() {
+        return String.valueOf(m_Stack);
+    }
+
+    public static int GetStackSize() {
         setJsonResult(m_Stack.size());
         setResponseCode(RESULT_OK);
+
+        return m_Stack.size();
+    }
+
+    public static int StackSize(){
+        return m_Stack.size();
     }
 
     public static void DeleteFromStack(int i_AmountToDelete) {
