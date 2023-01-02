@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.logging.*;
@@ -227,7 +228,7 @@ public class Endpoints {
         args[0] = operation;
         args[1] = String.valueOf(res);
         args[2] = Arrays.toString(arguments);
-        requestLogger(INDEPENDENT_ENDPOINT, "POST", System.nanoTime() - startTime);
+        requestLogger(INDEPENDENT_ENDPOINT, "POST", Duration.ofNanos(System.nanoTime() - startTime).toMillis());
         independentLogger(args, isFailure);
 
         return new ResponseEntity<>(Operations.GetJson(), HttpStatusCode.valueOf(Operations.GetResponseCode()));
@@ -243,7 +244,7 @@ public class Endpoints {
         args[0] = String.valueOf(Operations.GetStackSize());
         args[1] = Operations.GetStackArguments();
         isFailure = Operations.GetResponseCode() == 409;
-        requestLogger(SIZE_ENDPOINT, "GET", System.nanoTime() - startTime);
+        requestLogger(SIZE_ENDPOINT, "GET", Duration.ofNanos(System.nanoTime() - startTime).toMillis());
         stackLogger(SIZE_ENDPOINT, isFailure, false, args);
 
         return new ResponseEntity<>(Operations.GetJson(), HttpStatusCode.valueOf(Operations.GetResponseCode()));
@@ -265,7 +266,7 @@ public class Endpoints {
         Operations.AddToStack(arguments);
         args[3] = String.valueOf(Operations.StackSize());
         isFailure = Operations.GetResponseCode() == 409;
-        requestLogger(ARGUMENTS_ENDPOINT, "PUT", System.nanoTime() - startTime);
+        requestLogger(ARGUMENTS_ENDPOINT, "PUT", Duration.ofNanos(System.nanoTime() - startTime).toMillis());
         stackLogger(ARGUMENTS_ENDPOINT, isFailure, false, args);
 
         return new ResponseEntity<>(Operations.GetJson(), HttpStatusCode.valueOf(Operations.GetResponseCode()));
@@ -320,7 +321,7 @@ public class Endpoints {
         args[2] = String.valueOf(Operations.StackSize());
         args[3] = Arrays.toString(operationArguments).substring(1, Arrays.toString(operationArguments).length() - 1).replaceAll(" ", "");
         isFailure = Operations.GetResponseCode() == 409;
-        requestLogger(OPERATE_ENDPOINT, "GET", System.nanoTime() - startTime);
+        requestLogger(OPERATE_ENDPOINT, "GET", Duration.ofNanos(System.nanoTime() - startTime).toMillis());
         stackLogger(OPERATE_ENDPOINT, isFailure, false, args);
 
         return new ResponseEntity<>(Operations.GetJson(), HttpStatusCode.valueOf(Operations.GetResponseCode()));
@@ -337,7 +338,7 @@ public class Endpoints {
         isFailure = Operations.GetResponseCode() == 409;
         args[0] = String.valueOf(count);
         args[1] = String.valueOf(Operations.StackSize());
-        requestLogger(ARGUMENTS_ENDPOINT, "DELETE", System.nanoTime() - startTime);
+        requestLogger(ARGUMENTS_ENDPOINT, "DELETE", Duration.ofNanos(System.nanoTime() - startTime).toMillis());
         stackLogger(ARGUMENTS_ENDPOINT, isFailure, true, args);
 
         return new ResponseEntity<>(Operations.GetJson(), HttpStatusCode.valueOf(Operations.GetResponseCode()));
@@ -355,7 +356,7 @@ public class Endpoints {
         }
 
         m_RequestCounter++;
-        requestLogger(LEVEL_ENDPOINT, "GET", System.nanoTime() - startTime);
+        requestLogger(LEVEL_ENDPOINT, "GET", Duration.ofNanos(System.nanoTime() - startTime).toMillis());
 
         return new ResponseEntity<>(fixedLevel,
                 HttpStatusCode.valueOf(200));
@@ -375,6 +376,9 @@ public class Endpoints {
         }
 
         Logger.getLogger(name).setLevel(newLevel);
+        for (Handler handler : Logger.getLogger(name).getHandlers()) {
+            handler.setLevel(newLevel);
+        }
         levelChanged = true;
         switch (level) {
             case "DEBUG" -> fixedLevel = DEBUG_LEVEL;
@@ -382,7 +386,7 @@ public class Endpoints {
         }
 
         m_RequestCounter++;
-        requestLogger(LEVEL_ENDPOINT, "PUT", System.nanoTime() - startTime);
+        requestLogger(LEVEL_ENDPOINT, "PUT", Duration.ofNanos(System.nanoTime() - startTime).toMillis());
 
         return new ResponseEntity<>(fixedLevel,
                 HttpStatusCode.valueOf(200));
