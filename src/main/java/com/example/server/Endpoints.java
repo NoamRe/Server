@@ -16,6 +16,7 @@ import java.util.logging.*;
 
 @RestController
 public class Endpoints {
+    private boolean levelChanged = false;
     private int m_RequestCounter = 0;
     private final String REQUEST_LOGGER_NAME = "request-logger";
     private final String STACK_LOGGER_NAME = "stack-logger";
@@ -33,13 +34,31 @@ public class Endpoints {
     private final String ARGUMENTS_ENDPOINT = "/stack/arguments";
     private final String OPERATE_ENDPOINT = "/stack/operate";
     private final String LEVEL_ENDPOINT = "/logs/level";
+    private boolean isFirstRunReq = true;
+    private boolean isFirstRunStack = true;
+    private boolean isFirstRunInd = true;
 
 
-    Endpoints() {
+    Endpoints() throws IOException {
         File folder = new File(LOG_FOLDER_PATH);
         if (!folder.exists()) {
             folder.mkdir();
         }
+        File reqFile = new File(REQUEST_FILEPATH);
+        if (reqFile.exists()) {
+            reqFile.delete();
+        }
+        reqFile.createNewFile();
+        File stackFile = new File(STACK_FILEPATH);
+        if (stackFile.exists()) {
+            stackFile.delete();
+        }
+        stackFile.createNewFile();
+        File indFile = new File(INDEPENDENT_FILEPATH);
+        if (indFile.exists()) {
+            indFile.delete();
+        }
+        indFile.createNewFile();
     }
 
     private String getLogMessage(String i_Loglevel, String i_LogMessage) {
@@ -51,10 +70,14 @@ public class Endpoints {
 
     private void getStackLog(String i_Endpoint, boolean i_IsDelete,
                              StringBuilder i_InfoMessage, StringBuilder i_DebugMessage, String[] i_Args) {
+        StringBuilder newArgs = new StringBuilder(i_Args[1]);
+        newArgs.setCharAt(0, ']');
+        newArgs.setCharAt(newArgs.length() - 1, '[');
         switch (i_Endpoint) {
             case SIZE_ENDPOINT -> {
                 i_InfoMessage.append("Stack size is ").append(i_Args[0]);
-                i_DebugMessage.append("Stack content (first == top): [").append(i_Args[1]).append("]");
+                i_DebugMessage.append("Stack content (first == top): ").
+                        append(newArgs.reverse());
             }
             case ARGUMENTS_ENDPOINT -> {
                 if (i_IsDelete) {
@@ -89,20 +112,28 @@ public class Endpoints {
                 " | HTTP Verb " + i_RequestType;
         String debugMessage = "request #" + m_RequestCounter + " duration: " + i_RequestTime + "ms";
 
-        File file = new File(REQUEST_FILEPATH);
-        if (file.exists()) {
-            file.delete();
+        if (isFirstRunReq) {
+            Logger reqLogger = Logger.getLogger(REQUEST_LOGGER_NAME);
+            reqLogger.setLevel(Level.INFO);
+            FileHandler reqFileHandler = new FileHandler(REQUEST_FILEPATH);
+            ConsoleHandler reqConsoleHandler = new ConsoleHandler();
+            reqLogger.addHandler(reqFileHandler);
+            reqLogger.addHandler(reqConsoleHandler);
+            reqFileHandler.setFormatter(new Formatter() {
+                @Override
+                public String format(LogRecord record) {
+                    return record.getMessage();
+                }
+            });
+            reqConsoleHandler.setFormatter(new Formatter() {
+                @Override
+                public String format(LogRecord record) {
+                    return record.getMessage();
+                }
+            });
+            isFirstRunReq = false;
         }
-        file.createNewFile();
-        FileHandler fileHandler = new FileHandler(REQUEST_FILEPATH);
-        logger.addHandler(fileHandler);
-        fileHandler.setFormatter(new Formatter() {
-            @Override
-            public String format(LogRecord record) {
-                return record.getMessage();
-            }
-        });
-        logger.setLevel(Level.INFO);
+
         logger.log(Level.INFO, getLogMessage(INFO_LEVEL, infoMessage));
         logger.log(Level.FINE, getLogMessage(DEBUG_LEVEL, debugMessage));
     }
@@ -111,20 +142,20 @@ public class Endpoints {
                              boolean i_IsDelete, String[] i_Args) throws IOException {
         Logger logger = Logger.getLogger(STACK_LOGGER_NAME);
 
-        File file = new File(STACK_FILEPATH);
-        if (file.exists()) {
-            file.delete();
+        if (isFirstRunStack) {
+            Logger stackLogger = Logger.getLogger(STACK_LOGGER_NAME);
+            FileHandler stackFileHandler = new FileHandler(STACK_FILEPATH);
+            stackLogger.addHandler(stackFileHandler);
+            stackFileHandler.setFormatter(new Formatter() {
+                @Override
+                public String format(LogRecord record) {
+                    return record.getMessage();
+                }
+            });
+            stackLogger.setLevel(Level.INFO);
+            isFirstRunStack = false;
         }
-        file.createNewFile();
-        FileHandler fileHandler = new FileHandler(STACK_FILEPATH);
-        logger.addHandler(fileHandler);
-        fileHandler.setFormatter(new Formatter() {
-            @Override
-            public String format(LogRecord record) {
-                return record.getMessage();
-            }
-        });
-        logger.setLevel(Level.INFO);
+
         if (i_IsFailure) {
             String errorMessage = "Server encountered an error ! message: " + Operations.GetErrorMessage();
             logger.log(Level.SEVERE, getLogMessage(ERROR_LEVEL, errorMessage));
@@ -133,33 +164,36 @@ public class Endpoints {
             StringBuilder debugMessage = new StringBuilder();
             getStackLog(i_Endpoint, i_IsDelete, infoMessage, debugMessage, i_Args);
             logger.log(Level.INFO, getLogMessage(INFO_LEVEL, String.valueOf(infoMessage)));
-            logger.log(Level.FINE, getLogMessage(DEBUG_LEVEL, String.valueOf(debugMessage)));
+            if (!i_IsDelete) {
+                logger.log(Level.FINE, getLogMessage(DEBUG_LEVEL, String.valueOf(debugMessage)));
+            }
         }
     }
 
     private void independentLogger(String[] i_Args, boolean i_IsFailure) throws IOException {
         Logger logger = Logger.getLogger(INDEPENDENT_LOGGER_NAME);
 
-        File file = new File(INDEPENDENT_FILEPATH);
-        if (file.exists()) {
-            file.delete();
+        if (isFirstRunInd) {
+            Logger indLogger = Logger.getLogger(INDEPENDENT_LOGGER_NAME);
+            FileHandler indFileHandler = new FileHandler(INDEPENDENT_FILEPATH);
+            indLogger.addHandler(indFileHandler);
+            indFileHandler.setFormatter(new Formatter() {
+                @Override
+                public String format(LogRecord record) {
+                    return record.getMessage();
+                }
+            });
+            indLogger.setLevel(Level.FINE);
+            isFirstRunInd = false;
         }
-        file.createNewFile();
-        FileHandler fileHandler = new FileHandler(INDEPENDENT_FILEPATH);
-        logger.addHandler(fileHandler);
-        fileHandler.setFormatter(new Formatter() {
-            @Override
-            public String format(LogRecord record) {
-                return record.getMessage();
-            }
-        });
-        logger.setLevel(Level.FINE);
+
         if (i_IsFailure) {
             String errorMessage = "Server encountered an error ! message: " + Operations.GetErrorMessage();
             logger.log(Level.SEVERE, getLogMessage(ERROR_LEVEL, errorMessage));
         } else {
             String infoMessage = "Performing operation " + i_Args[0] + ". Result is " + i_Args[1];
-            String debugMessage = "Performing operation: " + i_Args[0] + "(" + i_Args[2] + ") = " + i_Args[1];
+            String debugMessage = "Performing operation: " + i_Args[0] + i_Args[2].replace('[', '(').
+                    replace(']', ')') + " = " + i_Args[1];
             logger.log(Level.INFO, getLogMessage(INFO_LEVEL, infoMessage));
             logger.log(Level.FINE, getLogMessage(DEBUG_LEVEL, debugMessage));
         }
@@ -226,10 +260,10 @@ public class Endpoints {
 
         args[0] = String.valueOf(arguments.length);
         args[1] = String.valueOf(Operations.StackSize());
-        args[2] = Arrays.toString(arguments);
+        args[2] = Arrays.toString(arguments).substring(1, Arrays.toString(arguments).length() - 1).replaceAll(" ", "");
         m_RequestCounter++;
         Operations.AddToStack(arguments);
-        args[3] = args[1] = String.valueOf(Operations.StackSize());
+        args[3] = String.valueOf(Operations.StackSize());
         isFailure = Operations.GetResponseCode() == 409;
         requestLogger(ARGUMENTS_ENDPOINT, "PUT", System.nanoTime() - startTime);
         stackLogger(ARGUMENTS_ENDPOINT, isFailure, false, args);
@@ -241,27 +275,50 @@ public class Endpoints {
     public ResponseEntity<String> PerformOperation(@RequestParam String operation) throws IOException {
         long startTime = System.nanoTime();
         boolean isFailure;
-        int[] operationArguments = null;
+        int[] operationArguments = new int[0];
         String[] args = new String[4];
         int res;
 
         m_RequestCounter++;
         Operations.SetOperation(operation);
+        Operations.SetStackArray();
         switch (operation.toLowerCase()) {
-            case "plus" -> res = Operations.Plus(operationArguments);
-            case "minus" -> res = Operations.Minus(operationArguments);
-            case "times" -> res = Operations.Times(operationArguments);
-            case "divide" -> res = Operations.Divide(operationArguments);
-            case "pow" -> res = Operations.Pow(operationArguments);
-            case "abs" -> res = Operations.Abs(operationArguments);
-            case "fact" -> res = Operations.Fact(operationArguments);
+            case "plus" -> {
+                operationArguments = new int[2];
+                res = Operations.Plus(operationArguments);
+            }
+            case "minus" -> {
+                operationArguments = new int[2];
+                res = Operations.Minus(operationArguments);
+            }
+            case "times" -> {
+                operationArguments = new int[2];
+                res = Operations.Times(operationArguments);
+            }
+            case "divide" -> {
+                operationArguments = new int[2];
+                res = Operations.Divide(operationArguments);
+            }
+            case "pow" -> {
+                operationArguments = new int[1];
+                res = Operations.Pow(operationArguments);
+            }
+            case "abs" -> {
+                operationArguments = new int[1];
+                res = Operations.Abs(operationArguments);
+            }
+            case "fact" -> {
+                operationArguments = new int[1];
+                res = Operations.Fact(operationArguments);
+            }
             default -> res = Operations.UnknownOperation();
         }
 
+        Operations.SetStackArray();
         args[0] = operation;
         args[1] = String.valueOf(res);
         args[2] = String.valueOf(Operations.StackSize());
-        args[3] = Arrays.toString(operationArguments);
+        args[3] = Arrays.toString(operationArguments).substring(1, Arrays.toString(operationArguments).length() - 1).replaceAll(" ", "");
         isFailure = Operations.GetResponseCode() == 409;
         requestLogger(OPERATE_ENDPOINT, "GET", System.nanoTime() - startTime);
         stackLogger(OPERATE_ENDPOINT, isFailure, false, args);
@@ -290,7 +347,7 @@ public class Endpoints {
     public ResponseEntity<String> GetLogLevel(@RequestParam("logger-name") String name) throws IOException {
         long startTime = System.nanoTime();
         String level = String.valueOf(Logger.getLogger(name).getLevel()).toUpperCase();
-        String fixedLevel = null;
+        String fixedLevel = INFO_LEVEL;
 
         switch (level) {
             case "FINE" -> fixedLevel = DEBUG_LEVEL;
@@ -305,11 +362,11 @@ public class Endpoints {
     }
 
     @PutMapping(LEVEL_ENDPOINT)
-    public ResponseEntity<String> GetLogLevel(@RequestParam("logger-name") String name,
+    public ResponseEntity<String> SetLogLevel(@RequestParam("logger-name") String name,
                                               @RequestParam("logger-level") String level) throws IOException {
         long startTime = System.nanoTime();
         Level newLevel = null;
-        String fixedLevel = null;
+        String fixedLevel = INFO_LEVEL;
 
         switch (level) {
             case INFO_LEVEL -> newLevel = Level.INFO;
@@ -318,13 +375,14 @@ public class Endpoints {
         }
 
         Logger.getLogger(name).setLevel(newLevel);
+        levelChanged = true;
         switch (level) {
-            case "FINE" -> fixedLevel = DEBUG_LEVEL;
-            case "SEVERE" -> fixedLevel = ERROR_LEVEL;
+            case "DEBUG" -> fixedLevel = DEBUG_LEVEL;
+            case "ERROR" -> fixedLevel = ERROR_LEVEL;
         }
 
         m_RequestCounter++;
-        requestLogger(LEVEL_ENDPOINT, "GET", System.nanoTime() - startTime);
+        requestLogger(LEVEL_ENDPOINT, "PUT", System.nanoTime() - startTime);
 
         return new ResponseEntity<>(fixedLevel,
                 HttpStatusCode.valueOf(200));

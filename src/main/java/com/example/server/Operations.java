@@ -11,6 +11,7 @@ public class Operations {
     private static int m_ResponseCode;
     private static String m_Operation;
     private static String m_ErrorMessage;
+    private static boolean m_IsStackArray = false;
     private static final Stack<Integer> m_Stack = new Stack<>();
 
     public static String GetJson() {
@@ -19,6 +20,10 @@ public class Operations {
 
     public static String GetErrorMessage() {
         return m_ErrorMessage;
+    }
+
+    public static void SetStackArray() {
+        m_IsStackArray = !m_IsStackArray;
     }
 
     public static int GetResponseCode() {
@@ -68,15 +73,12 @@ public class Operations {
         return isLegalResult;
     }
 
-    private static int[] getStackArguments(int i_RequiredArguments) {
+    private static void getStackArguments(int i_RequiredArguments, int[] i_Arguments) {
         int i = 0;
-        int[] arguments = new int[i_RequiredArguments];
 
         for (; i < i_RequiredArguments; i++) {
-            arguments[i] = m_Stack.pop();
+            i_Arguments[i] = m_Stack.pop();
         }
-
-        return arguments;
     }
 
     public static int Plus(int[] i_Arguments) {
@@ -84,7 +86,7 @@ public class Operations {
         int length;
         int sum = 0;
 
-        if (i_Arguments == null) {
+        if (m_IsStackArray) {
             length = m_Stack.size();
             isStack = true;
         } else {
@@ -93,7 +95,7 @@ public class Operations {
 
         if (amountOfArgumentsCheck(length, REQUIRED_ARGUMENTS_BINARY, isStack)) {
             if (isStack) {
-                i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_BINARY);
+                getStackArguments(REQUIRED_ARGUMENTS_BINARY, i_Arguments);
             }
 
             for (int argument : i_Arguments) {
@@ -113,7 +115,7 @@ public class Operations {
         int length;
         int sum = 0;
 
-        if (i_Arguments == null) {
+        if (m_IsStackArray) {
             length = m_Stack.size();
             isStack = true;
         } else {
@@ -122,7 +124,7 @@ public class Operations {
 
         if (amountOfArgumentsCheck(length, REQUIRED_ARGUMENTS_BINARY, isStack)) {
             if (isStack) {
-                i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_BINARY);
+                getStackArguments(REQUIRED_ARGUMENTS_BINARY, i_Arguments);
             }
 
             sum = i_Arguments[0] * 2;
@@ -143,7 +145,7 @@ public class Operations {
         int length;
         int sum = 0;
 
-        if (i_Arguments == null) {
+        if (m_IsStackArray) {
             length = m_Stack.size();
             isStack = true;
         } else {
@@ -152,7 +154,7 @@ public class Operations {
 
         if (amountOfArgumentsCheck(length, REQUIRED_ARGUMENTS_BINARY, isStack)) {
             if (isStack) {
-                i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_BINARY);
+                getStackArguments(REQUIRED_ARGUMENTS_BINARY, i_Arguments);
             }
 
             sum = 1;
@@ -173,7 +175,7 @@ public class Operations {
         int length;
         int sum = 0;
 
-        if (i_Arguments == null) {
+        if (m_IsStackArray) {
             length = m_Stack.size();
             isStack = true;
         } else {
@@ -182,7 +184,7 @@ public class Operations {
 
         if (amountOfArgumentsCheck(length, REQUIRED_ARGUMENTS_BINARY, isStack)) {
             if (isStack) {
-                i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_BINARY);
+                getStackArguments(REQUIRED_ARGUMENTS_BINARY, i_Arguments);
             }
 
             boolean isDividedByZero = false;
@@ -218,7 +220,7 @@ public class Operations {
         int length;
         int sum = 0;
 
-        if (i_Arguments == null) {
+        if (m_IsStackArray) {
             length = m_Stack.size();
             isStack = true;
         } else {
@@ -227,7 +229,7 @@ public class Operations {
 
         if (amountOfArgumentsCheck(length, REQUIRED_ARGUMENTS_BINARY, isStack)) {
             if (isStack) {
-                i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_BINARY);
+                getStackArguments(REQUIRED_ARGUMENTS_BINARY, i_Arguments);
             }
 
             for (int i = 0; i < i_Arguments.length - 1; i++) {
@@ -247,7 +249,7 @@ public class Operations {
         int length;
         int sum = 0;
 
-        if (i_Arguments == null) {
+        if (m_IsStackArray) {
             length = m_Stack.size();
             isStack = true;
         } else {
@@ -256,10 +258,10 @@ public class Operations {
 
         if (amountOfArgumentsCheck(length, REQUIRED_ARGUMENTS_UNARY, isStack)) {
             if (isStack) {
-                i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_UNARY);
+                getStackArguments(REQUIRED_ARGUMENTS_UNARY, i_Arguments);
             }
 
-            sum=Math.abs(i_Arguments[0]);
+            sum = Math.abs(i_Arguments[0]);
             setJsonResult(Math.abs(i_Arguments[0]));
             setResponseCode(RESULT_OK);
         } else {
@@ -274,7 +276,7 @@ public class Operations {
         int length;
         int fact = 0;
 
-        if (i_Arguments == null) {
+        if (m_IsStackArray) {
             length = m_Stack.size();
             isStack = true;
         } else {
@@ -283,7 +285,7 @@ public class Operations {
 
         if (amountOfArgumentsCheck(length, REQUIRED_ARGUMENTS_UNARY, isStack)) {
             if (isStack) {
-                i_Arguments = getStackArguments(REQUIRED_ARGUMENTS_UNARY);
+                getStackArguments(REQUIRED_ARGUMENTS_UNARY, i_Arguments);
             }
 
             fact = 1;
@@ -331,7 +333,7 @@ public class Operations {
         return m_Stack.size();
     }
 
-    public static int StackSize(){
+    public static int StackSize() {
         return m_Stack.size();
     }
 
